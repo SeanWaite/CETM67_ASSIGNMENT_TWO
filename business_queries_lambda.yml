@@ -4,7 +4,7 @@ on: [push]
 
 jobs:
 
-  build:
+  build and test:
 
     runs-on: ubuntu-latest
 
@@ -19,14 +19,57 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
       - name: Test the python script 'lambda_function.py' can run
-        run : python BusinessQueries/lambda_function.py
+        run : |
+          python BusinessQueries/lambda_function.py
+          python Authenticator/lambda_function.py
 
       - name: Lint the code
-        run: flake8 BusinessQueries/lambda_function.py
+        run: |
+          flake8 BusinessQueries/lambda_function.py
+          flake8 Authenticator/lambda_function.py
 
       - name: Unit testing
         run: python -m unittest "queries_unit_tests.py"
+
+  package-and-deploy:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: List files in the repository
+        run: ls ${{ github.workspace }}
+
+      - name: Make the directory
+        run: |
+          mkdir -p ./artifacts/${{ github.repository }}
+          ls ${{ github.workspace }}
+
+      - name: Create Zip File for Business Queries
+        uses: montudor/action-zip@v0.1.0
+        with:
+          args: zip -qq -r business_queries_package.zip BusinessQueries/lambda_function.py
+
+      - name: Create Zip File for Authenticator
+        uses: montudor/action-zip@v0.1.0
+        with:
+          args: zip -qq -r authenticator_package.zip Authenticator/lambda_function.py
+
+      - name: Move zips to artifacts directory
+        run: mv *package.zip ./artifacts
+
+      - name: List files in the artifacts directory
+        run: cd ./artifacts && ls
+      
+      - name: Push Zip to S3
+        uses: jakejarvis/s3-sync-action@v0.3.1
+        env:
+          SOURCE_DIR: './artifacts/.'
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       
       - name: Job Stats
         run: echo "🍏 This job's status is ${{ job.status }}."
-  
