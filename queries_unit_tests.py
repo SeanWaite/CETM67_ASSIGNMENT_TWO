@@ -206,7 +206,7 @@ class TestStringMethods(unittest.TestCase):
 
         response = BusinessQueries(event=test_query_event, context={})
 
-        self.assertEqual(response['body'], 'Call to insert query failed')
+        self.assertEqual(response['body'], '"Call to insert query failed"')
 
 if __name__ == '__main__':
     unittest.main()

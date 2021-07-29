@@ -112,7 +112,7 @@ def lambda_handler(event, context):
                 'message': message,
                 'answered': answered
                 })
-        except KeyError:
+        except Exception:
             message = "Call to insert query failed"
 
             responseObject = {}
@@ -129,10 +129,10 @@ def lambda_handler(event, context):
             sns_client = boto3.client('sns')
             sns_subject = f'New query - {queryID}'
             sns_message = f'New query recieved from {forename} {surname} \
-                \n{message}'
+                            \n{message}'
 
             sns_client.publish(TopicArn='arn:aws:sns:us-east-1: \
-                               645243735875:QueryNotificaton',
+                                         645243735875:QueryNotificaton',
                                Message=sns_message,
                                Subject=sns_subject)
 
