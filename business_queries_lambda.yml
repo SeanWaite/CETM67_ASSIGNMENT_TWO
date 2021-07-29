@@ -62,14 +62,16 @@ jobs:
       - name: List files in the artifacts directory
         run: cd ./artifacts && ls
       
-      - name: Push Zip to S3
-        uses: jakejarvis/s3-sync-action@v0.3.1
-        env:
-          SOURCE_DIR: './artifacts/.'
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: ${{ secrets.AWS_REGION }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+
+      - name: Push zip to S3
+        run: aws s3 sync './artifacts/.' s3://document-training
       
       - name: Job Stats
         run: echo "🍏 This job's status is ${{ job.status }}."
