@@ -81,7 +81,8 @@ def lambda_handler(event, context):
             responseObject['body'] = json.dumps(error_message)
             return responseObject
 
-        # answered needs to be a boolean but is recieved as a string so below is required
+        # answered needs to be a boolean but is recieved as a
+        # string so below is required
         try:
             if event['queryStringParameters']['answered'].upper() == "TRUE":
                 answered = True
@@ -112,34 +113,44 @@ def lambda_handler(event, context):
                 'answered': answered
                 })
         except KeyError:
+            message = "Call to insert query failed"
+
             responseObject = {}
             responseObject['statusCode'] = '400'
             responseObject['headers'] = {}
-            responseObject['body'] = "Call to insert query failed"
+            responseObject['body'] = json.dumps(message)
             return responseObject
 
         if response['ResponseMetadata']['HTTPStatusCode'] == 200:
 
-            # If successful send email to staff to let them know a new query has been asked
-            # For the purposes of my assignment this is my university email address
+            # If successful send email to staff to let them know a new query
+            # has been asked. For the purposes of my assignment this is my
+            # university email address
             sns_client = boto3.client('sns')
-            sns_subject = "New query - " + queryID
-            sns_message = "New query recieved from " + forename + " " + surname + "\n" + message
+            sns_subject = f'New query - {queryID}'
+            sns_message = f'New query recieved from {forename} {surname} \
+                \n{message}'
 
-            sns_client.publish(TopicArn='arn:aws:sns:us-east-1:645243735875:QueryNotificaton',
+            sns_client.publish(TopicArn='arn:aws:sns:us-east-1: \
+                               645243735875:QueryNotificaton',
                                Message=sns_message,
                                Subject=sns_subject)
+
+            message = "Call to insert query was successful"
 
             responseObject = {}
             responseObject['statusCode'] = '200'
             responseObject['headers'] = {}
-            responseObject['body'] = "Call to insert query was successful"
+            responseObject['body'] = json.dumps(message)
             return responseObject
         else:
+            message = "Call to insert query or send SNS failed"
+
             responseObject = {}
-            responseObject['statusCode'] = response['ResponseMetadata']['HTTPStatusCode']
+            responseObject['statusCode'] = \
+                response['ResponseMetadata']['HTTPStatusCode']
             responseObject['headers'] = {}
-            responseObject['body'] = "Call to insert query or send SNS failed"
+            responseObject['body'] = json.dumps(message)
             return responseObject
 
     # Ensure calling method and api paths supplied are correct
@@ -157,7 +168,8 @@ def lambda_handler(event, context):
             responseObject['body'] = json.dumps(message)
             return responseObject
 
-        # updateto needs to be a boolean but is recieved as a string so below is required
+        # updateto needs to be a boolean but is recieved as a string
+        # so below is required
         try:
             if event['queryStringParameters']['updateto'].upper() == "TRUE":
                 updateTo = True
@@ -172,7 +184,8 @@ def lambda_handler(event, context):
             responseObject['body'] = json.dumps(message)
             return responseObject
 
-        # Update query to say if answered or not, but only if queryid already exists
+        # Update query to say if answered or not, but only if queryid
+        # already exists
         try:
             response = table.update_item(
                 Key={'query_id': queryID},
@@ -181,35 +194,44 @@ def lambda_handler(event, context):
                 ExpressionAttributeValues={':bool': updateTo}
                 )
         except ClientError as error:
-            if error.response['Error']['Code'] == 'ConditionalCheckFailedException':
+            if error.response['Error']['Code'] == \
+                    'ConditionalCheckFailedException':
+                message = "Supplied input does not exist. \
+                           Failed to update query status"
+
                 responseObject = {}
                 responseObject['statusCode'] = 400
                 responseObject['headers'] = {}
-                responseObject['body'] = "Supplied input does not exist. Failed to update query status"
+                responseObject['body'] = json.dumps(message)
                 return responseObject
 
         if response['ResponseMetadata']['HTTPStatusCode'] == 200:
+            message = "Successfully updated query"
 
             responseObject = {}
             responseObject['statusCode'] = '200'
             responseObject['headers'] = {}
-            responseObject['body'] = "Successfully updated query"
+            responseObject['body'] = json.dumps(message)
             return responseObject
         else:
+            message = "Failed to update query"
+
             responseObject = {}
-            responseObject['statusCode'] = response['ResponseMetadata']['HTTPStatusCode']
+            responseObject['statusCode'] = \
+                response['ResponseMetadata']['HTTPStatusCode']
             responseObject['headers'] = {}
-            responseObject['body'] = "Failed to update query"
+            responseObject['body'] = json.dumps(message)
             return responseObject
 
     # Ensure calling method and api paths supplied are correct
     if event['httpMethod'] == "GET" and event['path'] == countQueriesPath:
 
         # Count how many queries are answered and outstanding
-        countAnswered = table.scan(FilterExpression=Key('answered').eq(True),
-                                   Select='COUNT')
-        countOutstanding = table.scan(FilterExpression=Key('answered').eq(False),
-                                      Select='COUNT')
+        countAnswered = table.scan(
+            FilterExpression=Key('answered').eq(True), Select='COUNT')
+
+        countOutstanding = table.scan(
+            FilterExpression=Key('answered').eq(False), Select='COUNT')
 
         message = {}
         message['answered'] = countAnswered['Count']
@@ -243,7 +265,8 @@ def lambda_handler(event, context):
         queryNo = 1
         oldestQuery = {}
 
-        # Loop through all returned queries and check the dates to only return the oldest
+        # Loop through all returned queries and check the
+        # dates to only return the oldest
         for query in outstanding['Items']:
             if queryNo == 1:
                 oldestQuery['query_id'] = query['query_id']
