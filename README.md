@@ -8,6 +8,6 @@ This includes:
  - 1 yaml file to process the work flow on push new files to the repository. 
    This will proceed to lint and unit test the lambda functions and if succesful zip and upload these to my S3 bucket.
   
-Thanks!
+Thanks
 
 Sean
